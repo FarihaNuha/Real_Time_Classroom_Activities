@@ -42,6 +42,11 @@ export default function SessionDashboard({ session, profile, onLeave }) {
     audioEnabled: true,
     streamSource: 'camera'
   });
+  const [studentStreamState, setStudentStreamState] = useState({
+    videoEnabled: false,
+    audioEnabled: false,
+    streamSource: 'camera'
+  });
 
   // Chat state
   const [chatMessages, setChatMessages] = useState([]);
@@ -50,29 +55,29 @@ export default function SessionDashboard({ session, profile, onLeave }) {
   const chatEndRef = useRef(null);
   const lastStateRef = useRef(teacherStreamState);
 
-  // Synchronize student active tab with teacher stream transitions
+  // Synchronize active tab with remote stream transitions
   useEffect(() => {
-    if (isTeacher) return;
-    if (!teacherStreamState) return;
+    const remoteState = isTeacher ? studentStreamState : teacherStreamState;
+    if (!remoteState) return;
 
     const prev = lastStateRef.current;
     
     // 1. Started screen sharing or enabled camera (videoEnabled becomes true, or streamSource changes while videoEnabled is true)
-    const turnedOn = teacherStreamState.videoEnabled && (!prev || !prev.videoEnabled);
-    const sourceChanged = teacherStreamState.videoEnabled && prev && prev.videoEnabled && (prev.streamSource !== teacherStreamState.streamSource);
+    const turnedOn = remoteState.videoEnabled && (!prev || !prev.videoEnabled);
+    const sourceChanged = remoteState.videoEnabled && prev && prev.videoEnabled && (prev.streamSource !== remoteState.streamSource);
     
     if (turnedOn || sourceChanged) {
       setActiveTab('stream');
     }
     
     // 2. Stopped screen sharing or turned off camera (videoEnabled becomes false)
-    const turnedOff = !teacherStreamState.videoEnabled && prev && prev.videoEnabled;
+    const turnedOff = !remoteState.videoEnabled && prev && prev.videoEnabled;
     if (turnedOff) {
       setActiveTab('whiteboard');
     }
 
-    lastStateRef.current = teacherStreamState;
-  }, [teacherStreamState, isTeacher]);
+    lastStateRef.current = remoteState;
+  }, [teacherStreamState, studentStreamState, isTeacher]);
 
   // Load chat and participants on join
   useEffect(() => {
@@ -192,9 +197,15 @@ export default function SessionDashboard({ session, profile, onLeave }) {
       session.id,
       profile.id,
       profile.role,
-      (stream) => setRemoteStream(stream),
+      (stream, remoteUserId) => setRemoteStream(stream),
       (state) => setWebrtcState(state),
-      (streamState) => setTeacherStreamState(streamState)
+      (streamState) => {
+        if (isTeacher) {
+          setStudentStreamState(streamState);
+        } else {
+          setTeacherStreamState(streamState);
+        }
+      }
     );
 
     setWebrtc(webrtcSession);
@@ -620,7 +631,7 @@ export default function SessionDashboard({ session, profile, onLeave }) {
                 isTeacher={isTeacher} 
                 connectionState={webrtcState} 
                 stream={remoteStream} 
-                teacherStreamState={teacherStreamState}
+                remoteStreamState={isTeacher ? studentStreamState : teacherStreamState}
               />
             )}
           </div>

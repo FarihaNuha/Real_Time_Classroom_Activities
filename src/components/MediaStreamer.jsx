@@ -1,17 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Video, VideoOff, Mic, MicOff, Monitor, Radio, Tv, ShieldAlert, Sparkles, Presentation, CheckCircle2 } from 'lucide-react';
 
-export default function MediaStreamer({ webrtcSession, isTeacher, connectionState, stream, teacherStreamState }) {
+export default function MediaStreamer({ webrtcSession, isTeacher, connectionState, stream, remoteStreamState }) {
   const videoRef = useRef(null);
   const studentVideoRef = useRef(null);
   
-  const [videoEnabled, setVideoEnabled] = useState(true);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [streamSource, setStreamSource] = useState('camera'); // 'camera' | 'screen'
+  // Symmetrical Media States
+  const [localVideoEnabled, setLocalVideoEnabled] = useState(isTeacher);
+  const [localAudioEnabled, setLocalAudioEnabled] = useState(isTeacher);
+  const [localStreamSource, setLocalStreamSource] = useState('camera'); // 'camera' | 'screen'
   
-  // Student local webcam preview states
-  const [studentLocalStream, setStudentLocalStream] = useState(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+  // Deriving remote states from remoteStreamState
+  const remoteVideoEnabled = remoteStreamState ? remoteStreamState.videoEnabled : !isTeacher;
+  const remoteAudioEnabled = remoteStreamState ? remoteStreamState.audioEnabled : !isTeacher;
+  const remoteStreamSource = remoteStreamState?.streamSource || 'camera';
 
   const slides = [
     {
@@ -54,56 +58,31 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
 
   // Rotate slides automatically for screen sharing fallback
   useEffect(() => {
-    if (!isTeacher && streamSource === 'screen' && videoEnabled) {
+    if (!isTeacher && remoteStreamSource === 'screen' && remoteVideoEnabled) {
       const interval = setInterval(() => {
         setActiveSlideIndex(prev => (prev + 1) % slides.length);
       }, 7000);
       return () => clearInterval(interval);
     }
-  }, [isTeacher, streamSource, videoEnabled]);
+  }, [isTeacher, remoteStreamSource, remoteVideoEnabled]);
 
-  // Set remote stream to student's video tag
+  // Attach remote stream to main video element (for both teacher and student)
   useEffect(() => {
-    if (!isTeacher && stream && videoRef.current) {
+    if (stream && videoRef.current) {
       videoRef.current.srcObject = stream;
     }
-  }, [stream, isTeacher]);
+  }, [stream]);
 
-  // Set local stream to teacher's video tag
+  // Attach local stream to thumbnail preview (for both teacher and student)
   useEffect(() => {
-    if (isTeacher && webrtcSession?.localStream && videoRef.current) {
-      videoRef.current.srcObject = webrtcSession.localStream;
+    if (webrtcSession?.localStream && studentVideoRef.current) {
+      studentVideoRef.current.srcObject = webrtcSession.localStream;
     }
-  }, [webrtcSession?.localStream, isTeacher]);
-
-  // Attach student local stream to thumbnail video
-  useEffect(() => {
-    if (!isTeacher && studentLocalStream && studentVideoRef.current) {
-      studentVideoRef.current.srcObject = studentLocalStream;
-    }
-  }, [studentLocalStream, isTeacher]);
-
-  // Clean up student local preview stream on unmount
-  useEffect(() => {
-    return () => {
-      if (studentLocalStream) {
-        studentLocalStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [studentLocalStream]);
-
-  // Synchronize student's receiver view with teacher's broadcasted stream state
-  useEffect(() => {
-    if (!isTeacher && teacherStreamState) {
-      setVideoEnabled(teacherStreamState.videoEnabled);
-      setAudioEnabled(teacherStreamState.audioEnabled);
-      setStreamSource(teacherStreamState.streamSource);
-    }
-  }, [teacherStreamState, isTeacher]);
+  }, [webrtcSession?.localStream]);
 
   // Handle native "Stop Sharing" click from browser
   useEffect(() => {
-    if (isTeacher && streamSource === 'screen' && webrtcSession?.localStream) {
+    if (localStreamSource === 'screen' && webrtcSession?.localStream) {
       const videoTrack = webrtcSession.localStream.getVideoTracks()[0];
       if (videoTrack) {
         const handleTrackEnded = () => {
@@ -115,81 +94,59 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
         };
       }
     }
-  }, [isTeacher, streamSource, webrtcSession?.localStream]);
+  }, [localStreamSource, webrtcSession?.localStream]);
 
-  // Handle media controls
+  // Handle media controls symmetrically
   const toggleVideo = async () => {
-    if (isTeacher) {
-      let nextVal = !videoEnabled;
-      if (webrtcSession?.localStream) {
+    let nextVal = !localVideoEnabled;
+    if (webrtcSession) {
+      if (!webrtcSession.localStream && nextVal) {
+        await webrtcSession.startLocalStream(localStreamSource);
+      } else if (webrtcSession.localStream) {
         const videoTrack = webrtcSession.localStream.getVideoTracks()[0];
         if (videoTrack) {
-          videoTrack.enabled = !videoTrack.enabled;
-          nextVal = videoTrack.enabled;
-        }
-      }
-      setVideoEnabled(nextVal);
-      webrtcSession.broadcastStreamState({
-        videoEnabled: nextVal,
-        audioEnabled,
-        streamSource
-      });
-    } else {
-      // Student: Toggle local webcam preview overlay
-      if (studentLocalStream) {
-        studentLocalStream.getTracks().forEach(track => track.stop());
-        setStudentLocalStream(null);
-      } else {
-        try {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 160, height: 120 },
-            audio: false
-          });
-          setStudentLocalStream(mediaStream);
-        } catch (err) {
-          console.warn("Could not acquire student local camera stream:", err);
-          alert("Could not access camera: " + err.message);
+          videoTrack.enabled = nextVal;
         }
       }
     }
+    setLocalVideoEnabled(nextVal);
+    webrtcSession?.broadcastStreamState({
+      videoEnabled: nextVal,
+      audioEnabled: localAudioEnabled,
+      streamSource: localStreamSource
+    });
   };
 
-  const toggleAudio = () => {
-    if (isTeacher) {
-      if (webrtcSession?.localStream) {
+  const toggleAudio = async () => {
+    let nextVal = !localAudioEnabled;
+    if (webrtcSession) {
+      if (!webrtcSession.localStream && nextVal) {
+        await webrtcSession.startLocalStream(localStreamSource);
+      } else if (webrtcSession.localStream) {
         const audioTrack = webrtcSession.localStream.getAudioTracks()[0];
         if (audioTrack) {
-          audioTrack.enabled = !audioTrack.enabled;
-          const nextVal = audioTrack.enabled;
-          setAudioEnabled(nextVal);
-          
-          webrtcSession.broadcastStreamState({
-            videoEnabled,
-            audioEnabled: nextVal,
-            streamSource
-          });
+          audioTrack.enabled = nextVal;
         }
       }
-    } else {
-      // Student: Toggle local mute of teacher feed
-      setAudioEnabled(!audioEnabled);
     }
+    setLocalAudioEnabled(nextVal);
+    webrtcSession?.broadcastStreamState({
+      videoEnabled: localVideoEnabled,
+      audioEnabled: nextVal,
+      streamSource: localStreamSource
+    });
   };
 
   const handleSourceChange = async (source) => {
-    if (!isTeacher || !webrtcSession) return;
+    if (!webrtcSession) return;
     
-    setStreamSource(source);
+    setLocalStreamSource(source);
+    setLocalVideoEnabled(true);
+    
     const newStream = await webrtcSession.startLocalStream(source);
-    if (newStream && videoRef.current) {
-      videoRef.current.srcObject = newStream;
-    }
-    
-    setVideoEnabled(true);
-    
     webrtcSession.broadcastStreamState({
       videoEnabled: true,
-      audioEnabled,
+      audioEnabled: localAudioEnabled,
       streamSource: source
     });
   };
@@ -200,83 +157,37 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
       {/* Stream Area */}
       <div className="relative flex-1 bg-slate-950 flex items-center justify-center overflow-hidden">
         
-        {/* Render real video stream if connection is active and we have media */}
-        {(connectionState === 'connected' || (isTeacher && webrtcSession?.localStream)) && videoEnabled ? (
+        {/* Render real video stream if connection is active and we have remote media stream */}
+        {connectionState === 'connected' && stream && (
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            muted={isTeacher} // always mute local mic to avoid echo
-            className={`w-full h-full object-cover ${(isTeacher && streamSource === 'camera') ? 'transform scale-x-[-1]' : ''}`}
+            className={`w-full h-full object-cover ${(remoteStreamSource === 'camera') ? 'transform scale-x-[-1]' : ''} ${remoteVideoEnabled ? 'block' : 'hidden'}`}
           />
-        ) : (
-          /* PREVENT BLANK BLACK SCREEN: GORGEOUS SIMULATION STREAM & LECTURE DECK */
+        )}
+
+        {/* Fallback View when remote video is disabled or connection is simulated */}
+        {(!remoteVideoEnabled || connectionState !== 'connected' || !stream) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 p-6 text-center select-none">
             
-            {/* Case 1: Video is disabled/muted by teacher */}
-            {!videoEnabled ? (
+            {/* Case 1: Video is disabled/muted by remote user */}
+            {connectionState === 'connected' && stream && !remoteVideoEnabled ? (
               <div className="space-y-4 max-w-sm">
                 <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto animate-pulse">
                   <VideoOff className="w-8 h-8" />
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-semibold text-slate-200 text-sm md:text-base">
-                    Instructor Feed Paused
+                    Camera Feed Disabled
                   </h4>
                   <p className="text-xs text-slate-400">
-                    The teacher has disabled the projection stream. Smart whiteboard is still available.
+                    The participant has turned off their camera. Audio is still active.
                   </p>
                 </div>
               </div>
-            ) : isTeacher || streamSource === 'camera' ? (
-              /* Case 2: Camera Feed Simulation */
-              <>
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20 animate-pulse-ring">
-                    <Radio className="w-8 h-8 animate-pulse text-purple-400" />
-                  </div>
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 flex items-center justify-center text-[8px] font-bold text-white">LIVE</span>
-                  </span>
-                </div>
-
-                <div className="space-y-2 max-w-sm">
-                  <h4 className="font-semibold text-slate-200 text-sm md:text-base flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
-                    {isTeacher ? 'Broadcasting Stream Active' : 'Instructor Projection Stream'}
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    {isTeacher 
-                      ? 'WebRTC signaling channel is active. Video stream broadcast is routed to student portals.' 
-                      : 'Receiving teacher broadcast. Standard system camera stream is active.'}
-                  </p>
-                </div>
-
-                {/* Simulated Live Audio Waveform (bouncing divs) */}
-                {audioEnabled && (
-                  <div className="flex items-center gap-1.5 mt-6 h-8">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1].map((val, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          height: `${Math.max(10, Math.random() * 28)}px`,
-                          animationDelay: `${idx * 0.05}s`
-                        }}
-                        className="w-1 bg-gradient-to-t from-purple-500 to-indigo-400 rounded-full transition-all duration-150 animate-pulse-ring"
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                {!audioEnabled && (
-                  <p className="text-[10px] text-rose-400 mt-6 flex items-center gap-1 font-semibold">
-                    <MicOff className="w-3.5 h-3.5" /> Audio Stream Muted
-                  </p>
-                )}
-              </>
-            ) : (
-              /* Case 3: Student View - Slide Presentation Deck Fallback */
+            ) : remoteStreamSource === 'screen' ? (
+              /* Case 2: Screen Sharing Fallback (if simulated/offline) */
               <div className="bg-slate-900/70 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-w-lg w-full text-left transition-all duration-500 animate-fade-in-up">
                 
                 {/* Slides Header */}
@@ -325,6 +236,51 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
                 </div>
 
               </div>
+            ) : (
+              /* Case 3: Camera Feed Simulation (if simulated/offline) */
+              <>
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20 animate-pulse-ring">
+                    <Radio className="w-8 h-8 animate-pulse text-purple-400" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 flex items-center justify-center text-[8px] font-bold text-white">LIVE</span>
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-w-sm">
+                  <h4 className="font-semibold text-slate-200 text-sm md:text-base flex items-center justify-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    Connecting Projection Stream
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Waiting for WebRTC connection. Interactive simulation dashboard is online.
+                  </p>
+                </div>
+
+                {/* Simulated Live Audio Waveform (bouncing divs) */}
+                {remoteAudioEnabled && (
+                  <div className="flex items-center gap-1.5 mt-6 h-8">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1].map((val, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          height: `${Math.max(10, Math.random() * 28)}px`,
+                          animationDelay: `${idx * 0.05}s`
+                        }}
+                        className="w-1 bg-gradient-to-t from-purple-500 to-indigo-400 rounded-full transition-all duration-150 animate-pulse-ring"
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                {!remoteAudioEnabled && (
+                  <p className="text-[10px] text-rose-400 mt-6 flex items-center gap-1 font-semibold">
+                    <MicOff className="w-3.5 h-3.5" /> Audio Stream Muted
+                  </p>
+                )}
+              </>
             )}
 
             <div className="absolute bottom-4 left-4 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-md border border-slate-800 text-[10px] text-slate-400 flex items-center gap-1">
@@ -349,16 +305,16 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
               {connectionState}
             </span>
             
-            {isTeacher && (
+            {remoteVideoEnabled && stream && (
               <span className="bg-slate-900/95 border border-slate-800 text-slate-400 text-[9px] px-2 py-0.5 rounded shadow pointer-events-auto font-medium">
-                Source: {streamSource === 'camera' ? 'Webcam Camera' : 'Display Capture'}
+                Remote: {remoteStreamSource === 'camera' ? 'Webcam Camera' : 'Display Capture'}
               </span>
             )}
           </div>
         </div>
 
-        {/* Student picture-in-picture local camera preview overlay */}
-        {!isTeacher && studentLocalStream && (
+        {/* Local camera preview picture-in-picture overlay */}
+        {localVideoEnabled && webrtcSession?.localStream && (
           <div className="absolute bottom-16 right-4 w-28 h-20 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shadow-2xl z-20 transition-all duration-300">
             <video
               ref={studentVideoRef}
@@ -383,57 +339,53 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
           <button
             onClick={toggleAudio}
             className={`p-2 rounded-lg border transition-all ${
-              audioEnabled 
+              localAudioEnabled 
                 ? 'bg-slate-900 text-slate-200 border-slate-800 hover:bg-slate-800' 
                 : 'bg-rose-950/20 text-rose-400 border-rose-900/30 hover:bg-rose-950/40'
             }`}
-            title={audioEnabled ? "Mute Microphone" : "Unmute Microphone"}
+            title={localAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
           >
-            {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+            {localAudioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
           </button>
 
           <button
             onClick={toggleVideo}
             className={`p-2 rounded-lg border transition-all ${
-              (isTeacher ? videoEnabled : studentLocalStream !== null)
+              localVideoEnabled
                 ? 'bg-slate-900 text-slate-200 border-slate-800 hover:bg-slate-800' 
                 : 'bg-rose-950/20 text-rose-400 border-rose-900/30 hover:bg-rose-950/40'
             }`}
-            title={isTeacher ? (videoEnabled ? "Turn Camera Off" : "Turn Camera On") : (studentLocalStream ? "Close My Camera" : "Open My Camera")}
+            title={localVideoEnabled ? "Turn Camera Off" : "Turn Camera On"}
           >
-            {(isTeacher ? videoEnabled : studentLocalStream !== null) ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+            {localVideoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Right Side: Media Source switching (Teacher only) */}
-        {isTeacher && (
-          <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-            <button
-              onClick={() => handleSourceChange('camera')}
-              className={`px-3 py-1.5 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                streamSource === 'camera' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 disabled:opacity-30'
-              }`}
-            >
-              <Tv className="w-3.5 h-3.5" />
-              Camera
-            </button>
-            <button
-              onClick={() => handleSourceChange('screen')}
-              className={`px-3 py-1.5 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                streamSource === 'screen' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 disabled:opacity-30'
-              }`}
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              Screen
-            </button>
-          </div>
-        )}
+        {/* Symmetrical Media Source switching (Both Roles) */}
+        <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+          <button
+            onClick={() => handleSourceChange('camera')}
+            className={`px-3 py-1.5 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-all ${
+              localStreamSource === 'camera' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Tv className="w-3.5 h-3.5" />
+            Camera
+          </button>
+          <button
+            onClick={() => handleSourceChange('screen')}
+            className={`px-3 py-1.5 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-all ${
+              localStreamSource === 'screen' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            Screen
+          </button>
+        </div>
 
-        {!isTeacher && (
-          <span className="text-[10px] text-slate-500 font-medium">
-            {studentLocalStream ? "Local camera preview active" : "Privacy mode: student camera muted by default"}
-          </span>
-        )}
+        <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
+          {localVideoEnabled ? "Local broadcast stream active" : "Local media feed paused"}
+        </span>
 
       </div>
     </div>

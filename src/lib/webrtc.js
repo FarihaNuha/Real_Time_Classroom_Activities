@@ -97,12 +97,12 @@ export class WebRTCSession {
               this.updateState('simulated');
             }
           }, 15000);
-        } else if (type === 'stream-state' && this.role === 'student') {
+        } else if (type === 'stream-state') {
           if (this.onStreamStateChange) {
             this.onStreamStateChange(data);
           }
           // Self-healing: if student is currently simulated or has no peer connection, reconnect
-          if (Object.keys(this.pcs).length === 0) {
+          if (this.role === 'student' && Object.keys(this.pcs).length === 0) {
             this.channel.send({
               type: 'broadcast',
               event: 'signal',
@@ -177,35 +177,28 @@ export class WebRTCSession {
           });
         }
         
-        // Update any existing peer connections with the new tracks
-        if (this.role === 'teacher') {
-          const videoTrack = this.localStream.getVideoTracks()[0];
-          const audioTrack = this.localStream.getAudioTracks()[0];
+        const videoTrack = this.localStream.getVideoTracks()[0];
+        const audioTrack = this.localStream.getAudioTracks()[0];
 
-          Object.keys(this.pcs).forEach(studentId => {
-            const pc = this.pcs[studentId];
-            const senders = pc.getSenders();
-            
-            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-            const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
-            
-            if (videoSender && videoTrack) {
-              videoSender.replaceTrack(videoTrack).catch(err => {
-                console.warn("Could not replace video track directly, adding new one:", err);
-              });
-            } else if (videoTrack) {
-              pc.addTrack(videoTrack, this.localStream);
-            }
-            
-            if (audioSender && audioTrack) {
-              audioSender.replaceTrack(audioTrack).catch(err => {
-                console.warn("Could not replace audio track directly, adding new one:", err);
-              });
-            } else if (audioTrack) {
-              pc.addTrack(audioTrack, this.localStream);
-            }
-          });
-        }
+        // Update all peer connections with the new tracks
+        Object.keys(this.pcs).forEach(peerId => {
+          const pc = this.pcs[peerId];
+          const transceivers = pc.getTransceivers();
+          const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video');
+          const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio');
+          
+          if (videoTransceiver && videoTrack) {
+            videoTransceiver.sender.replaceTrack(videoTrack).catch(err => {
+              console.warn("Could not replace video track:", err);
+            });
+          }
+          
+          if (audioTransceiver && audioTrack) {
+            audioTransceiver.sender.replaceTrack(audioTrack).catch(err => {
+              console.warn("Could not replace audio track:", err);
+            });
+          }
+        });
         
         return this.localStream;
       } catch (err) {
@@ -236,11 +229,19 @@ export class WebRTCSession {
 
     this.pcs[studentId] = pc;
 
-    // Add local tracks to connection
+    // Add transceivers for bidirectional audio/video
+    pc.addTransceiver('video', { direction: 'sendrecv' });
+    pc.addTransceiver('audio', { direction: 'sendrecv' });
+
+    // Set local tracks if available
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream);
-      });
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      const audioTrack = this.localStream.getAudioTracks()[0];
+      const transceivers = pc.getTransceivers();
+      const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video');
+      const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio');
+      if (videoTransceiver && videoTrack) videoTransceiver.sender.replaceTrack(videoTrack);
+      if (audioTransceiver && audioTrack) audioTransceiver.sender.replaceTrack(audioTrack);
     }
 
     pc.onicecandidate = (event) => {
@@ -250,6 +251,13 @@ export class WebRTCSession {
           event: 'signal',
           payload: { type: 'ice-candidate', from: this.userId, to: studentId, data: event.candidate.toJSON() }
         });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      if (this.onStream) {
+        const remoteStream = (event.streams && event.streams[0]) || new MediaStream([event.track]);
+        this.onStream(remoteStream, studentId);
       }
     };
 
@@ -288,6 +296,21 @@ export class WebRTCSession {
     
     this.pcs[teacherId] = pc;
 
+    // Add transceivers for bidirectional audio/video
+    pc.addTransceiver('video', { direction: 'sendrecv' });
+    pc.addTransceiver('audio', { direction: 'sendrecv' });
+
+    // Set local tracks if available
+    if (this.localStream) {
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      const audioTrack = this.localStream.getAudioTracks()[0];
+      const transceivers = pc.getTransceivers();
+      const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video');
+      const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio');
+      if (videoTransceiver && videoTrack) videoTransceiver.sender.replaceTrack(videoTrack);
+      if (audioTransceiver && audioTrack) audioTransceiver.sender.replaceTrack(audioTrack);
+    }
+
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         this.channel.send({
@@ -301,7 +324,7 @@ export class WebRTCSession {
     pc.ontrack = (event) => {
       if (this.onStream) {
         const remoteStream = (event.streams && event.streams[0]) || new MediaStream([event.track]);
-        this.onStream(remoteStream);
+        this.onStream(remoteStream, teacherId);
         this.updateState('connected');
       }
     };
