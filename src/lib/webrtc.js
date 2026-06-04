@@ -161,26 +161,72 @@ export class WebRTCSession {
   async startLocalStream(type = 'camera') {
     this.streamPromise = (async () => {
       try {
-        if (this.localStream) {
-          this.localStream.getTracks().forEach(track => track.stop());
-        }
+        let videoTrack = null;
+        let audioTrack = null;
 
+        // 1. Acquire new video track first
         if (type === 'screen') {
-          this.localStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true
           });
+          videoTrack = screenStream.getVideoTracks()[0];
+          
+          if (videoTrack) {
+            // Listen to browser's native "Stop Sharing" button
+            videoTrack.addEventListener('ended', () => {
+              this.startLocalStream('camera');
+              this.broadcastStreamState({
+                videoEnabled: this.lastVideoEnabled,
+                audioEnabled: this.lastAudioEnabled,
+                streamSource: 'camera'
+              });
+            });
+          }
         } else {
-          this.localStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 },
-            audio: true
+          const cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480 }
+          });
+          videoTrack = cameraStream.getVideoTracks()[0];
+        }
+
+        // 2. Reuse or acquire audio track (keep microphone active)
+        const existingAudioTrack = this.localStream?.getAudioTracks()[0];
+        if (existingAudioTrack && existingAudioTrack.readyState === 'live') {
+          audioTrack = existingAudioTrack;
+        } else {
+          try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({
+              audio: true
+            });
+            audioTrack = audioStream.getAudioTracks()[0];
+          } catch (audioErr) {
+            console.warn("Could not acquire microphone track:", audioErr);
+          }
+        }
+
+        // 3. Stop old tracks only if we have replaced them
+        if (this.localStream) {
+          this.localStream.getVideoTracks().forEach(track => {
+            if (track !== videoTrack) track.stop();
+          });
+          this.localStream.getAudioTracks().forEach(track => {
+            if (track !== audioTrack) track.stop();
           });
         }
-        
-        const videoTrack = this.localStream.getVideoTracks()[0];
-        const audioTrack = this.localStream.getAudioTracks()[0];
 
-        // Update all peer connections with the new tracks
+        // 4. Combine into new MediaStream
+        const tracks = [];
+        if (videoTrack) {
+          videoTrack.enabled = this.lastVideoEnabled;
+          tracks.push(videoTrack);
+        }
+        if (audioTrack) {
+          audioTrack.enabled = this.lastAudioEnabled;
+          tracks.push(audioTrack);
+        }
+        this.localStream = new MediaStream(tracks);
+
+        // 5. Replace tracks in active peer connections
         Object.keys(this.pcs).forEach(peerId => {
           const pc = this.pcs[peerId];
           const transceivers = pc.getTransceivers();
@@ -202,9 +248,11 @@ export class WebRTCSession {
         
         return this.localStream;
       } catch (err) {
-        console.warn("Failed to acquire media stream, falling back to simulation:", err);
-        this.updateState('simulated');
-        return null;
+        console.warn("Failed to acquire media stream:", err);
+        if (!this.localStream) {
+          this.updateState('simulated');
+        }
+        return this.localStream;
       }
     })();
     return this.streamPromise;
@@ -392,13 +440,11 @@ export class WebRTCSession {
     }
   }
 
-  // Broadcast stream state (camera, mic, source) to students
+  // Broadcast stream state (camera, mic, source) to peers
   broadcastStreamState(state) {
-    if (this.role === 'teacher') {
-      this.lastVideoEnabled = state.videoEnabled;
-      this.lastAudioEnabled = state.audioEnabled;
-      this.lastStreamSource = state.streamSource;
-    }
+    this.lastVideoEnabled = state.videoEnabled;
+    this.lastAudioEnabled = state.audioEnabled;
+    this.lastStreamSource = state.streamSource;
     if (this.channel) {
       this.channel.send({
         type: 'broadcast',
