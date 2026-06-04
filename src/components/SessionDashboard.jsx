@@ -549,16 +549,18 @@ export default function SessionDashboard({ session, profile, onLeave }) {
       )}
 
       {/* 2. Main Workspace Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         
-        {/* Left Component Panel (65% width) */}
-        <main className="flex-1 lg:w-[65%] flex flex-col p-4 space-y-4 overflow-hidden h-full">
+        {/* Left Component Panel (65% width on desktop, full screen on mobile when whiteboard/stream active) */}
+        <main className={`flex-1 lg:w-[65%] lg:flex flex-col p-4 space-y-4 overflow-hidden h-full ${
+          (activeTab === 'whiteboard' || activeTab === 'stream') ? 'flex' : 'hidden lg:flex'
+        }`}>
           {/* Tab switcher buttons */}
           <div className="flex items-center justify-between bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 shrink-0">
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <button
                 onClick={() => setActiveTab('whiteboard')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   activeTab === 'whiteboard' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -568,12 +570,32 @@ export default function SessionDashboard({ session, profile, onLeave }) {
 
               <button
                 onClick={() => setActiveTab('stream')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   activeTab === 'stream' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Video className="w-3.5 h-3.5" />
                 Live Projection Stream
+              </button>
+
+              <button
+                onClick={() => setActiveTab('activities')}
+                className={`lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'activities' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Activities
+              </button>
+
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'chat' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Chat
               </button>
             </div>
             
@@ -599,10 +621,46 @@ export default function SessionDashboard({ session, profile, onLeave }) {
           </div>
         </main>
 
-        {/* Right Sidebar Widget Panel (35% width) */}
-        <aside className="lg:w-[35%] border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-950 flex flex-col overflow-hidden h-full">
+        {/* Right Sidebar Widget Panel (35% width on desktop, full screen on mobile when activities/chat active) */}
+        <aside className={`lg:w-[35%] lg:border-t-0 lg:border-l border-slate-800 bg-slate-950 lg:flex flex-col overflow-hidden h-full ${
+          (activeTab === 'activities' || activeTab === 'chat') ? 'flex flex-1 p-4' : 'hidden lg:flex'
+        }`}>
+          {/* Mobile Back & Sub-tab switcher */}
+          <div className="lg:hidden flex items-center justify-between mb-4 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 shrink-0">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab('whiteboard')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200"
+              >
+                ← Workspace
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('activities')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'activities' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Activities
+              </button>
+
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'chat' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Chat
+              </button>
+            </div>
+          </div>
+
           {/* Top: Quizzes & Activities widget */}
-          <div className="flex-1 min-h-[300px] border-b border-slate-800 overflow-hidden flex flex-col">
+          <div className={`flex-1 min-h-[300px] border-b border-slate-800 overflow-hidden flex flex-col ${
+            (activeTab === 'activities') ? 'flex' : 'hidden lg:flex'
+          }`}>
             <LiveActivities 
               sessionId={session.id} 
               isTeacher={isTeacher} 
@@ -613,7 +671,9 @@ export default function SessionDashboard({ session, profile, onLeave }) {
           </div>
 
           {/* Bottom: Real-time Group Chat widget */}
-          <div className="h-[280px] shrink-0 flex flex-col bg-slate-900/30 overflow-hidden">
+          <div className={`shrink-0 flex flex-col bg-slate-900/30 overflow-hidden ${
+            (activeTab === 'chat') ? 'flex-1 flex' : 'hidden lg:flex lg:h-[280px]'
+          }`}>
             <div className="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex items-center gap-2 text-xs font-bold text-slate-300">
               <MessageCircle className="w-4 h-4 text-purple-400" />
               Group Chat Channel
