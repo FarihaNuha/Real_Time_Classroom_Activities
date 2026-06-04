@@ -277,19 +277,20 @@ export class WebRTCSession {
 
     this.pcs[studentId] = pc;
 
-    // Add transceivers for bidirectional audio/video
-    pc.addTransceiver('video', { direction: 'sendrecv' });
-    pc.addTransceiver('audio', { direction: 'sendrecv' });
+    // Add transceivers with local tracks directly if available
+    const videoTrack = this.localStream?.getVideoTracks()[0];
+    const audioTrack = this.localStream?.getAudioTracks()[0];
 
-    // Set local tracks if available
-    if (this.localStream) {
-      const videoTrack = this.localStream.getVideoTracks()[0];
-      const audioTrack = this.localStream.getAudioTracks()[0];
-      const transceivers = pc.getTransceivers();
-      const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video');
-      const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio');
-      if (videoTransceiver && videoTrack) videoTransceiver.sender.replaceTrack(videoTrack);
-      if (audioTransceiver && audioTrack) audioTransceiver.sender.replaceTrack(audioTrack);
+    if (videoTrack) {
+      pc.addTransceiver(videoTrack, { direction: 'sendrecv' });
+    } else {
+      pc.addTransceiver('video', { direction: 'sendrecv' });
+    }
+
+    if (audioTrack) {
+      pc.addTransceiver(audioTrack, { direction: 'sendrecv' });
+    } else {
+      pc.addTransceiver('audio', { direction: 'sendrecv' });
     }
 
     pc.onicecandidate = (event) => {
@@ -303,9 +304,14 @@ export class WebRTCSession {
     };
 
     pc.ontrack = (event) => {
+      if (!pc.remoteStream) {
+        pc.remoteStream = new MediaStream();
+      }
+      if (!pc.remoteStream.getTracks().find(t => t.id === event.track.id)) {
+        pc.remoteStream.addTrack(event.track);
+      }
       if (this.onStream) {
-        const remoteStream = (event.streams && event.streams[0]) || new MediaStream([event.track]);
-        this.onStream(remoteStream, studentId);
+        this.onStream(pc.remoteStream, studentId);
       }
     };
 
@@ -344,21 +350,6 @@ export class WebRTCSession {
     
     this.pcs[teacherId] = pc;
 
-    // Add transceivers for bidirectional audio/video
-    pc.addTransceiver('video', { direction: 'sendrecv' });
-    pc.addTransceiver('audio', { direction: 'sendrecv' });
-
-    // Set local tracks if available
-    if (this.localStream) {
-      const videoTrack = this.localStream.getVideoTracks()[0];
-      const audioTrack = this.localStream.getAudioTracks()[0];
-      const transceivers = pc.getTransceivers();
-      const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video');
-      const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio');
-      if (videoTransceiver && videoTrack) videoTransceiver.sender.replaceTrack(videoTrack);
-      if (audioTransceiver && audioTrack) audioTransceiver.sender.replaceTrack(audioTrack);
-    }
-
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         this.channel.send({
@@ -370,11 +361,16 @@ export class WebRTCSession {
     };
 
     pc.ontrack = (event) => {
-      if (this.onStream) {
-        const remoteStream = (event.streams && event.streams[0]) || new MediaStream([event.track]);
-        this.onStream(remoteStream, teacherId);
-        this.updateState('connected');
+      if (!pc.remoteStream) {
+        pc.remoteStream = new MediaStream();
       }
+      if (!pc.remoteStream.getTracks().find(t => t.id === event.track.id)) {
+        pc.remoteStream.addTrack(event.track);
+      }
+      if (this.onStream) {
+        this.onStream(pc.remoteStream, teacherId);
+      }
+      this.updateState('connected');
     };
 
     pc.onconnectionstatechange = () => {
@@ -385,9 +381,32 @@ export class WebRTCSession {
       }
     };
 
+    // 1. Set remote description FIRST to create transceivers automatically from the offer
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     await this.processQueuedCandidates(teacherId);
+
+    // 2. Set local tracks on the automatically created transceivers
+    const transceivers = pc.getTransceivers();
+    const videoTransceiver = transceivers.find(t => t.receiver.track.kind === 'video' || t.sender.track?.kind === 'video');
+    const audioTransceiver = transceivers.find(t => t.receiver.track.kind === 'audio' || t.sender.track?.kind === 'audio');
+
+    if (this.localStream) {
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      const audioTrack = this.localStream.getAudioTracks()[0];
+      
+      if (videoTransceiver && videoTrack) {
+        await videoTransceiver.sender.replaceTrack(videoTrack);
+      }
+      if (audioTransceiver && audioTrack) {
+        await audioTransceiver.sender.replaceTrack(audioTrack);
+      }
+    }
+
+    // Ensure transceiver direction is sendrecv so student sends media back
+    if (videoTransceiver) videoTransceiver.direction = 'sendrecv';
+    if (audioTransceiver) audioTransceiver.direction = 'sendrecv';
     
+    // 3. Create and set local answer
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
