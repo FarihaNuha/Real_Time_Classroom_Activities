@@ -343,22 +343,22 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-purple-600/30">
       
       {/* Top Banner Header */}
-      <header className="px-6 py-4 bg-slate-900/60 border-b border-slate-800/80 flex items-center justify-between shadow-md shrink-0">
+      <header className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900/60 border-b border-slate-800/80 flex items-center justify-between shadow-md shrink-0 gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg text-base">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg text-base shrink-0">
             A
           </div>
           <div>
             <span className="text-sm font-bold text-white">ActiveClass</span>
-            <span className="text-[10px] text-slate-500 font-medium block -mt-0.5">Automated Attendance Analytics</span>
+            <span className="text-[10px] text-slate-500 font-medium hidden sm:block -mt-0.5">Automated Attendance Analytics</span>
           </div>
         </div>
 
         {user && (
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-300 block">{profile?.full_name}</span>
-              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="text-right max-w-[120px] sm:max-w-xs">
+              <span className="text-xs font-semibold text-slate-300 block truncate">{profile?.full_name}</span>
+              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide block truncate">
                 {profile?.role === 'teacher' ? 'Instructor / Host' : `Student ID: ${profile?.student_id || 'MOCK'}`}
               </span>
             </div>
@@ -381,7 +381,7 @@ function App() {
           <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
             {/* Left side: Premium platform highlight */}
-            <div className="space-y-6">
+            <div className="space-y-6 order-2 md:order-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 rounded-full border border-purple-500/20 text-purple-400 text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5" />
                 Next-Gen Virtual Classrooms
@@ -416,7 +416,7 @@ function App() {
             </div>
 
             {/* Right side: Login Panel */}
-            <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-6 shadow-2xl space-y-4 order-1 md:order-2">
               <div className="flex justify-between border-b border-slate-800 pb-2">
                 <button
                   type="button"
@@ -674,7 +674,7 @@ function App() {
                     return (
                       <div
                         key={sess.id}
-                        className="bg-slate-950/60 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 p-4 rounded-xl transition-all duration-150 flex items-center justify-between gap-4"
+                        className="bg-slate-950/60 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 p-4 rounded-xl transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                       >
                         <div className="space-y-1">
                           <h4 className="text-xs md:text-sm font-semibold text-slate-200 line-clamp-1">{sess.title}</h4>

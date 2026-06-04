@@ -461,33 +461,33 @@ export default function SessionDashboard({ session, profile, onLeave }) {
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       
       {/* 1. Header Area */}
-      <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 shadow-lg shrink-0">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 border-b border-slate-800 shadow-lg shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg text-lg">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg text-lg shrink-0">
             A
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-100">{session.title}</h1>
-              <span className="bg-emerald-500/10 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/20 font-semibold animate-pulse-ring uppercase">Active</span>
+              <h1 className="text-sm sm:text-base font-bold text-slate-100 line-clamp-1">{session.title}</h1>
+              <span className="bg-emerald-500/10 text-emerald-400 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/20 font-semibold animate-pulse-ring uppercase shrink-0">Active</span>
             </div>
-            <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+            <p className="text-[10px] sm:text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
               <User className="w-3.5 h-3.5" /> {isTeacher ? 'Host (Teacher)' : 'Joined as Student'}
             </p>
           </div>
         </div>
 
         {/* Room Code & Dynamic OTP Display */}
-        <div className="flex items-center gap-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 shadow-inner">
-          <div className="text-center pr-3 border-r border-slate-800">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Room Code</span>
-            <span className="text-sm font-extrabold text-purple-400 tracking-wider font-mono">{session.room_code}</span>
+        <div className="flex items-center gap-2 sm:gap-3 bg-slate-950 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-slate-800 shadow-inner">
+          <div className="text-center pr-2 sm:pr-3 border-r border-slate-800">
+            <span className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Room Code</span>
+            <span className="text-xs sm:text-sm font-extrabold text-purple-400 tracking-wider font-mono">{session.room_code}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="text-center">
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">One-Time OTP</span>
-              <span className="text-sm font-extrabold text-indigo-400 font-mono tracking-widest">{currentOtp}</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider block">One-Time OTP</span>
+              <span className="text-xs sm:text-sm font-extrabold text-indigo-400 font-mono tracking-widest">{currentOtp}</span>
             </div>
             {isTeacher && (
               <button
@@ -502,12 +502,12 @@ export default function SessionDashboard({ session, profile, onLeave }) {
         </div>
 
         {/* End / Leave Class actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {isTeacher ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={handleToggleLock}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow border ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shadow border ${
                   isSessionLocked 
                     ? 'bg-amber-600/10 hover:bg-amber-600 text-amber-400 hover:text-white border-amber-500/25' 
                     : 'bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border-emerald-500/25'
@@ -515,23 +515,25 @@ export default function SessionDashboard({ session, profile, onLeave }) {
                 title={isSessionLocked ? "Click to unlock classroom joining" : "Click to lock classroom joining"}
               >
                 {isSessionLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                {isSessionLocked ? 'Unlock Room' : 'Lock Room'}
+                <span className="hidden sm:inline">{isSessionLocked ? 'Unlock Room' : 'Lock Room'}</span>
               </button>
               <button
                 onClick={handleEndSession}
-                className="flex items-center gap-1.5 px-4 py-2 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs font-bold border border-rose-500/20 transition-all shadow"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs font-bold border border-rose-500/20 transition-all shadow"
+                title="End Classroom"
               >
                 <Square className="w-3.5 h-3.5" />
-                End Classroom
+                <span className="hidden sm:inline">End Classroom</span>
               </button>
             </div>
           ) : (
             <button
               onClick={onLeave}
-              className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all shadow border border-slate-700"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all shadow border border-slate-700"
+              title="Exit Room"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Exit Room
+              <span className="hidden sm:inline">Exit Room</span>
             </button>
           )}
         </div>
@@ -565,7 +567,8 @@ export default function SessionDashboard({ session, profile, onLeave }) {
                 }`}
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                Smart Whiteboard
+                <span className="hidden sm:inline">Smart Whiteboard</span>
+                <span className="sm:hidden">Board</span>
               </button>
 
               <button
@@ -575,7 +578,8 @@ export default function SessionDashboard({ session, profile, onLeave }) {
                 }`}
               >
                 <Video className="w-3.5 h-3.5" />
-                Live Projection Stream
+                <span className="hidden sm:inline">Live Projection Stream</span>
+                <span className="sm:hidden">Stream</span>
               </button>
 
               <button
@@ -599,9 +603,10 @@ export default function SessionDashboard({ session, profile, onLeave }) {
               </button>
             </div>
             
-            <div className="flex items-center gap-2 text-[10px] text-slate-500 mr-2">
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 mr-2 shrink-0">
               <Users className="w-3.5 h-3.5 text-slate-400" />
-              <span>{participants.length} connected</span>
+              <span className="hidden sm:inline">{participants.length} connected</span>
+              <span className="sm:hidden">{participants.length}</span>
             </div>
           </div>
 
@@ -671,7 +676,7 @@ export default function SessionDashboard({ session, profile, onLeave }) {
           </div>
 
           {/* Bottom: Real-time Group Chat widget */}
-          <div className={`shrink-0 flex flex-col bg-slate-900/30 overflow-hidden ${
+          <div className={`shrink-0 flex flex-col bg-slate-900/30 overflow-hidden border border-slate-800/80 rounded-xl shadow-2xl ${
             (activeTab === 'chat') ? 'flex-1 flex' : 'hidden lg:flex lg:h-[280px]'
           }`}>
             <div className="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex items-center gap-2 text-xs font-bold text-slate-300">
@@ -760,18 +765,26 @@ export default function SessionDashboard({ session, profile, onLeave }) {
         {/* Drawer Trigger tab */}
         <div 
           onClick={() => setDrawerOpen(!drawerOpen)}
-          className="flex items-center justify-between px-6 py-2.5 bg-slate-950 border-b border-slate-800 cursor-pointer hover:bg-slate-900 transition-all"
+          className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-slate-950 border-b border-slate-800 cursor-pointer hover:bg-slate-900 transition-all"
         >
-          <div className="flex items-center gap-3">
-            <Users className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-semibold text-slate-300">
-              {isTeacher 
-                ? `Connected Students: ${participants.length} | Active (Present): ${participants.filter(p => p.isPresent).length}`
-                : `My Participation: ${myParticipant ? `${myParticipant.activitiesCompleted}/${totalActivities}` : `0/${totalActivities}`} (${myParticipant ? myParticipant.percentage : 0}%) (${myParticipant?.isPresent ? 'Present' : 'Absent'})`}
+          <div className="flex items-center gap-3 max-w-[85%]">
+            <Users className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-300 truncate">
+              {isTeacher ? (
+                <>
+                  <span className="hidden sm:inline">Connected Students: {participants.length} | Active (Present): {participants.filter(p => p.isPresent).length}</span>
+                  <span className="sm:hidden">Students: {participants.length} | Active: {participants.filter(p => p.isPresent).length}</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">My Participation: {myParticipant ? `${myParticipant.activitiesCompleted}/${totalActivities}` : `0/${totalActivities}`} ({myParticipant ? myParticipant.percentage : 0}%) ({myParticipant?.isPresent ? 'Present' : 'Absent'})</span>
+                  <span className="sm:hidden">Participation: {myParticipant ? `${myParticipant.activitiesCompleted}/${totalActivities}` : `0/${totalActivities}`} ({myParticipant?.isPresent ? 'Present' : 'Absent'})</span>
+                </>
+              )}
             </span>
           </div>
           
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs shrink-0">
             <span className="text-[10px] uppercase font-bold tracking-wider hidden sm:inline">
               {drawerOpen ? 'Collapse Monitor' : 'Expand Monitor'}
             </span>
@@ -787,97 +800,179 @@ export default function SessionDashboard({ session, profile, onLeave }) {
               participants.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-4">No students have joined yet.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs text-slate-300">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                        <th className="pb-2">Student ID</th>
-                        <th className="pb-2">Full Name</th>
-                        <th className="pb-2 text-center">Activities Completed</th>
-                        <th className="pb-2 text-center">Participation Rate</th>
-                        <th className="pb-2 text-center">Status</th>
-                        <th className="pb-2 text-center">Override Flags</th>
-                        <th className="pb-2 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800">
-                      {participants.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-800/40">
-                          <td className="py-2.5 font-mono text-[11px] text-purple-400 font-semibold">{p.universityId}</td>
-                          <td className="py-2.5 font-medium text-slate-200">{p.fullName}</td>
-                          <td className="py-2.5 text-center font-bold">{p.activitiesCompleted} / {totalActivities}</td>
-                          <td className="py-2.5 text-center">
-                            <span className={`px-2 py-0.5 rounded font-mono ${
+                <>
+                  {/* Mobile responsive Cards Grid */}
+                  <div className="md:hidden space-y-3">
+                    {participants.map((p) => (
+                      <div key={p.id} className="bg-slate-950/80 border border-slate-800 p-3 rounded-lg space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-semibold text-slate-200">{p.fullName}</div>
+                            <div className="text-[10px] text-purple-400 font-mono font-semibold">{p.universityId}</div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${
                               p.percentage >= 50 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
                             }`}>
                               {p.percentage}%
                             </span>
-                          </td>
-                          <td className="py-2.5 text-center">
-                            {p.isPresent ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[11px]">
-                                ✔ Present
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20 text-[11px]">
-                                ✘ Absent
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2.5 text-center">
+                            <span className={`block text-[10px] mt-1 font-bold ${p.isPresent ? 'text-emerald-400' : 'text-rose-450'}`}>
+                              {p.isPresent ? '✔ Present' : '✘ Absent'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-900">
+                          <span className="text-[10px] text-slate-500">
+                            Activities: <strong className="text-slate-300">{p.activitiesCompleted} / {totalActivities}</strong>
+                          </span>
+                          <div>
                             {p.manualOverride ? (
                               <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded font-semibold">
                                 OVERRIDDEN
                               </span>
                             ) : (
-                              <span className="text-[10px] text-slate-600 font-semibold">AUTOMATIC</span>
+                              <span className="text-[9px] text-slate-650 font-semibold">AUTO</span>
                             )}
-                          </td>
-                          <td className="py-2.5 text-right space-x-1.5">
-                            {p.manualOverride ? (
-                              <div className="inline-flex gap-1.5">
-                                <button
-                                  onClick={() => handleOverrideStatusChange(p, true)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
-                                    p.isPresent 
-                                      ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' 
-                                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
-                                  }`}
-                                >
-                                  Present
-                                </button>
-                                <button
-                                  onClick={() => handleOverrideStatusChange(p, false)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
-                                    !p.isPresent 
-                                      ? 'bg-rose-600/20 text-rose-400 border-rose-500/30' 
-                                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
-                                  }`}
-                                >
-                                  Absent
-                                </button>
-                                <button
-                                  onClick={() => handleDisableOverride(p)}
-                                  className="px-2 py-0.5 bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded text-[10px]"
-                                  title="Restore automatic trigger calculation"
-                                >
-                                  Reset Auto
-                                </button>
-                              </div>
-                            ) : (
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-1.5 pt-1">
+                          {p.manualOverride ? (
+                            <div className="inline-flex gap-1">
                               <button
-                                onClick={() => handleOverrideToggle(p)}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-purple-950/40 border border-slate-700 hover:border-purple-900/30 text-slate-400 hover:text-purple-400 rounded text-[10px] font-bold transition-all"
+                                onClick={() => handleOverrideStatusChange(p, true)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                                  p.isPresent 
+                                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' 
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                }`}
                               >
-                                Override Attendance
+                                Present
                               </button>
-                            )}
-                          </td>
+                              <button
+                                onClick={() => handleOverrideStatusChange(p, false)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                                  !p.isPresent 
+                                    ? 'bg-rose-600/20 text-rose-400 border-rose-500/30' 
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                }`}
+                              >
+                                Absent
+                              </button>
+                              <button
+                                onClick={() => handleDisableOverride(p)}
+                                className="px-2 py-0.5 bg-slate-900 border border-slate-700 hover:bg-slate-850 text-slate-400 hover:text-slate-200 rounded text-[10px]"
+                              >
+                                Reset Auto
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleOverrideToggle(p)}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-purple-950/40 border border-slate-700 hover:border-purple-900/30 text-slate-400 hover:text-purple-400 rounded text-[10px] font-bold transition-all"
+                            >
+                              Override Attendance
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs text-slate-300">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                          <th className="pb-2">Student ID</th>
+                          <th className="pb-2">Full Name</th>
+                          <th className="pb-2 text-center">Activities Completed</th>
+                          <th className="pb-2 text-center">Participation Rate</th>
+                          <th className="pb-2 text-center">Status</th>
+                          <th className="pb-2 text-center">Override Flags</th>
+                          <th className="pb-2 text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {participants.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-800/40">
+                            <td className="py-2.5 font-mono text-[11px] text-purple-400 font-semibold">{p.universityId}</td>
+                            <td className="py-2.5 font-medium text-slate-200">{p.fullName}</td>
+                            <td className="py-2.5 text-center font-bold">{p.activitiesCompleted} / {totalActivities}</td>
+                            <td className="py-2.5 text-center">
+                              <span className={`px-2 py-0.5 rounded font-mono ${
+                                p.percentage >= 50 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+                              }`}>
+                                {p.percentage}%
+                              </span>
+                            </td>
+                            <td className="py-2.5 text-center">
+                              {p.isPresent ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[11px]">
+                                  ✔ Present
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20 text-[11px]">
+                                  ✘ Absent
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 text-center">
+                              {p.manualOverride ? (
+                                <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded font-semibold">
+                                  OVERRIDDEN
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-600 font-semibold">AUTOMATIC</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 text-right space-x-1.5">
+                              {p.manualOverride ? (
+                                <div className="inline-flex gap-1.5">
+                                  <button
+                                    onClick={() => handleOverrideStatusChange(p, true)}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                                      p.isPresent 
+                                        ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' 
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                    }`}
+                                  >
+                                    Present
+                                  </button>
+                                  <button
+                                    onClick={() => handleOverrideStatusChange(p, false)}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                                      !p.isPresent 
+                                        ? 'bg-rose-600/20 text-rose-400 border-rose-500/30' 
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                    }`}
+                                  >
+                                    Absent
+                                  </button>
+                                  <button
+                                    onClick={() => handleDisableOverride(p)}
+                                    className="px-2 py-0.5 bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded text-[10px]"
+                                    title="Restore automatic trigger calculation"
+                                  >
+                                    Reset Auto
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleOverrideToggle(p)}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-purple-950/40 border border-slate-700 hover:border-purple-900/30 text-slate-400 hover:text-purple-400 rounded text-[10px] font-bold transition-all"
+                                >
+                                  Override Attendance
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )
             ) : (
               /* STUDENT MONITOR: INDIVIDUAL SUMMARY METRIC */

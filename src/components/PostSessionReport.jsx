@@ -951,43 +951,51 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
           {activeReportTab === 'attendance' && (
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
               {isTeacher && (
                 <>
                   <button
                     onClick={handleExportTeachingPDF}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow transition-all border border-blue-500/30"
+                    className="flex items-center gap-1 px-2.5 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow transition-all border border-blue-500/30"
+                    title="Download Teaching PDF"
                   >
                     <FileText className="w-4 h-4" />
-                    Download Teaching PDF
+                    <span className="hidden sm:inline">Download Teaching PDF</span>
+                    <span className="sm:hidden">Teaching PDF</span>
                   </button>
                   <button
                     onClick={handleExportResponsePDF}
                     disabled={participants.length === 0}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow transition-all border border-indigo-500/30"
+                    className="flex items-center gap-1 px-2.5 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow transition-all border border-indigo-500/30"
+                    title="Download Responses PDF"
                   >
                     <FileText className="w-4 h-4" />
-                    Download Responses PDF
+                    <span className="hidden sm:inline">Download Responses PDF</span>
+                    <span className="sm:hidden">Responses PDF</span>
                   </button>
                 </>
               )}
               <button
                 onClick={handleExportCSV}
                 disabled={participants.length === 0}
-                className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow transition-all border border-purple-500/30"
+                className="flex items-center gap-1 px-2.5 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow transition-all border border-purple-500/30"
+                title="Export CSV Report"
               >
                 <Download className="w-4 h-4" />
-                Export CSV Report
+                <span className="hidden sm:inline">Export CSV Report</span>
+                <span className="sm:hidden">CSV</span>
               </button>
             </div>
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700"
+            className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700"
+            title="Return to Dashboard"
           >
-            Return to Dashboard
+            <span className="hidden sm:inline">Return to Dashboard</span>
+            <span className="sm:hidden">Return</span>
           </button>
         </div>
       </header>
@@ -1025,36 +1033,39 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
       </section>
 
       {/* Tabs list */}
-      <div className="flex bg-slate-950 border-b border-slate-800 shrink-0 px-6 py-2">
-        <div className="flex gap-1.5">
+      <div className="flex bg-slate-950 border-b border-slate-800 shrink-0 px-4 sm:px-6 py-2 overflow-x-auto">
+        <div className="flex flex-wrap sm:flex-nowrap gap-1.5">
           <button
             onClick={() => setActiveReportTab('attendance')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               activeReportTab === 'attendance' ? 'bg-slate-900 text-purple-400' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            Class Attendance Sheet
+            <span className="hidden sm:inline">Class Attendance Sheet</span>
+            <span className="sm:hidden">Attendance</span>
           </button>
 
           <button
             onClick={() => setActiveReportTab('activities')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               activeReportTab === 'activities' ? 'bg-slate-900 text-indigo-400' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <BarChart className="w-3.5 h-3.5" />
-            Class Activity Metrics
+            <span className="hidden sm:inline">Class Activity Metrics</span>
+            <span className="sm:hidden">Activities</span>
           </button>
 
           <button
             onClick={() => setActiveReportTab('whiteboard')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               activeReportTab === 'whiteboard' ? 'bg-slate-900 text-pink-400' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Image className="w-3.5 h-3.5" />
-            Whiteboard Project Archive
+            <span className="hidden sm:inline">Whiteboard Project Archive</span>
+            <span className="sm:hidden">Whiteboard</span>
           </button>
         </div>
       </div>
@@ -1085,46 +1096,43 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
                 <p className="text-[10px] text-slate-600">No participants registered in this classroom session.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs text-slate-300">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold bg-slate-950/40">
-                      <th className="px-6 py-3">Student ID</th>
-                      <th className="px-6 py-3">Full Name</th>
-                      <th className="px-6 py-3 text-center">Activities Answered</th>
-                      <th className="px-6 py-3 text-center">Engagement Percentage</th>
-                      <th className="px-6 py-3 text-center">Attendance Outcome</th>
-                      <th className="px-6 py-3 text-center">Override Flags</th>
-                      {isTeacher && <th className="px-6 py-3 text-right">Override Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-850">
-                    {participants.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-800/20">
-                        <td className="px-6 py-3.5 font-mono text-[11px] text-purple-400 font-bold">{p.universityId}</td>
-                        <td className="px-6 py-3.5 font-semibold text-slate-200">{p.fullName}</td>
-                        <td className="px-6 py-3.5 text-center font-bold">
-                          {p.activitiesCompleted} / {sessionInfo?.total_activities || 0}
-                        </td>
-                        <td className="px-6 py-3.5 text-center">
-                          <span className={`px-2 py-0.5 rounded font-mono ${
-                            p.percentage >= 50 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {p.percentage}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-3.5 text-center">
+              <>
+                {/* Mobile cards view */}
+                <div className="md:hidden p-4 space-y-3">
+                  {participants.map((p) => (
+                    <div key={p.id} className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-semibold text-slate-200">{p.fullName}</div>
+                          <div className="text-[10px] text-purple-400 font-mono font-semibold">{p.universityId}</div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded font-mono text-xs ${
+                          p.percentage >= 50 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+                        }`}>
+                          {p.percentage}%
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-xs py-2 border-t border-b border-slate-850">
+                        <div>
+                          <span className="text-slate-500">Activities:</span>{' '}
+                          <span className="font-bold text-slate-300">{p.activitiesCompleted} / {sessionInfo?.total_activities || 0}</span>
+                        </div>
+                        <div>
                           {p.isPresent ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-xs">
+                            <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px]">
                               ✔ Present
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold bg-rose-500/15 text-rose-400 border border-rose-500/20 text-xs">
+                            <span className="px-2 py-0.5 rounded-full font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20 text-[10px]">
                               ✘ Absent
                             </span>
                           )}
-                        </td>
-                        <td className="px-6 py-3.5 text-center">
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500">
                           {p.manualOverride ? (
                             <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded font-semibold">
                               MANUAL OVERRIDE
@@ -1132,14 +1140,15 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
                           ) : (
                             <span className="text-[10px] text-slate-600 font-semibold">AUTOMATIC</span>
                           )}
-                        </td>
+                        </span>
+                        
                         {isTeacher && (
-                          <td className="px-6 py-3.5 text-right space-x-1.5">
+                          <div className="flex gap-1.5">
                             {p.manualOverride ? (
-                              <div className="inline-flex gap-1.5">
+                              <div className="inline-flex gap-1">
                                 <button
                                   onClick={() => handleStatusChange(p, true)}
-                                  className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                                  className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${
                                     p.isPresent 
                                       ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' 
                                       : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -1149,7 +1158,7 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
                                 </button>
                                 <button
                                   onClick={() => handleStatusChange(p, false)}
-                                  className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                                  className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${
                                     !p.isPresent 
                                       ? 'bg-rose-600/20 text-rose-400 border-rose-500/30' 
                                       : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -1159,7 +1168,7 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
                                 </button>
                                 <button
                                   onClick={() => handleDisableOverride(p)}
-                                  className="px-2.5 py-1 bg-slate-900 border border-slate-700 hover:bg-slate-850 text-slate-400 hover:text-slate-200 rounded text-[10px]"
+                                  className="px-2 py-1 bg-slate-950 border border-slate-850 text-slate-400 hover:text-slate-200 rounded text-[10px]"
                                 >
                                   Reset Auto
                                 </button>
@@ -1167,18 +1176,114 @@ export default function PostSessionReport({ sessionId, isTeacher, sessionTitle, 
                             ) : (
                               <button
                                 onClick={() => handleToggleOverride(p)}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-purple-950/40 border border-slate-700 hover:border-purple-900/30 text-slate-400 hover:text-purple-400 rounded text-[10px] font-bold transition-all"
+                                className="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-400 rounded text-[10px] font-bold hover:bg-slate-700"
                               >
                                 Override Attendance
                               </button>
                             )}
-                          </td>
+                          </div>
                         )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs text-slate-300">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold bg-slate-950/40">
+                        <th className="px-6 py-3">Student ID</th>
+                        <th className="px-6 py-3">Full Name</th>
+                        <th className="px-6 py-3 text-center">Activities Answered</th>
+                        <th className="px-6 py-3 text-center">Engagement Percentage</th>
+                        <th className="px-6 py-3 text-center">Attendance Outcome</th>
+                        <th className="px-6 py-3 text-center">Override Flags</th>
+                        {isTeacher && <th className="px-6 py-3 text-right">Override Actions</th>}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-850">
+                      {participants.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-800/20">
+                          <td className="px-6 py-3.5 font-mono text-[11px] text-purple-400 font-bold">{p.universityId}</td>
+                          <td className="px-6 py-3.5 font-semibold text-slate-200">{p.fullName}</td>
+                          <td className="px-6 py-3.5 text-center font-bold">
+                            {p.activitiesCompleted} / {sessionInfo?.total_activities || 0}
+                          </td>
+                          <td className="px-6 py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded font-mono ${
+                              p.percentage >= 50 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+                            }`}>
+                              {p.percentage}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-3.5 text-center">
+                            {p.isPresent ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-xs">
+                                ✔ Present
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold bg-rose-500/15 text-rose-400 border border-rose-500/20 text-xs">
+                                ✘ Absent
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-3.5 text-center">
+                            {p.manualOverride ? (
+                              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded font-semibold">
+                                MANUAL OVERRIDE
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-600 font-semibold">AUTOMATIC</span>
+                            )}
+                          </td>
+                          {isTeacher && (
+                            <td className="px-6 py-3.5 text-right space-x-1.5">
+                              {p.manualOverride ? (
+                                <div className="inline-flex gap-1.5">
+                                  <button
+                                    onClick={() => handleStatusChange(p, true)}
+                                    className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                                      p.isPresent 
+                                        ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30' 
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                    }`}
+                                  >
+                                    Present
+                                  </button>
+                                  <button
+                                    onClick={() => handleStatusChange(p, false)}
+                                    className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                                      !p.isPresent 
+                                        ? 'bg-rose-600/20 text-rose-400 border-rose-500/30' 
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                                    }`}
+                                  >
+                                    Absent
+                                  </button>
+                                  <button
+                                    onClick={() => handleDisableOverride(p)}
+                                    className="px-2.5 py-1 bg-slate-900 border border-slate-700 hover:bg-slate-850 text-slate-400 hover:text-slate-200 rounded text-[10px]"
+                                  >
+                                    Reset Auto
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleToggleOverride(p)}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-purple-950/40 border border-slate-700 hover:border-purple-900/30 text-slate-400 hover:text-purple-400 rounded text-[10px] font-bold transition-all"
+                                >
+                                  Override Attendance
+                                </button>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
