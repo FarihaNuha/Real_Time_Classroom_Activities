@@ -73,6 +73,23 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     }
   }, [stream]);
 
+  // Auto-start local stream for teacher on mount and broadcast state
+  useEffect(() => {
+    if (isTeacher && webrtcSession && !webrtcSession.localStream) {
+      // Start local camera stream
+      webrtcSession.startLocalStream(localStreamSource).then(() => {
+        // Broadcast initial stream state so students can receive it
+        webrtcSession.broadcastStreamState({
+          videoEnabled: true,
+          audioEnabled: true,
+          streamSource: localStreamSource,
+        });
+      }).catch(err => {
+        console.warn('Failed to start teacher local stream:', err);
+      });
+    }
+  }, [isTeacher, webrtcSession, localStreamSource]);
+
   // Attach local stream to thumbnail preview (for both teacher and student)
   useEffect(() => {
     if (webrtcSession?.localStream && studentVideoRef.current) {
