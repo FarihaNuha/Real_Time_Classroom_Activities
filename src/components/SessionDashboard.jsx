@@ -35,7 +35,7 @@ export default function SessionDashboard({ session, profile, onLeave }) {
   
   // WebRTC Stream state
   const [webrtc, setWebrtc] = useState(null);
-  const [webrtcState, setWebrtcState] = useState('simulated');
+  const [webrtcState, setWebrtcState] = useState('connecting');
   const [remoteStream, setRemoteStream] = useState(null);
   const [teacherStreamState, setTeacherStreamState] = useState({
     videoEnabled: true,
@@ -70,12 +70,6 @@ export default function SessionDashboard({ session, profile, onLeave }) {
       setActiveTab('stream');
     }
     
-    // 2. Stopped screen sharing or turned off camera (videoEnabled becomes false)
-    const turnedOff = !remoteState.videoEnabled && prev && prev.videoEnabled;
-    if (turnedOff) {
-      setActiveTab('whiteboard');
-    }
-
     lastStateRef.current = remoteState;
   }, [teacherStreamState, studentStreamState, isTeacher]);
 
@@ -210,7 +204,7 @@ export default function SessionDashboard({ session, profile, onLeave }) {
 
     setWebrtc(webrtcSession);
     if (isTeacher) {
-      webrtcSession.startLocalStream('camera');
+      webrtcSession.startLocalStream('camera', { video: true, audio: true });
     }
 
     return () => {
@@ -245,6 +239,13 @@ export default function SessionDashboard({ session, profile, onLeave }) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
+
+  // Release all media devices when session ends
+  useEffect(() => {
+    if (sessionStatus === 'ended' && webrtc) {
+      webrtc.destroy();
+    }
+  }, [sessionStatus, webrtc]);
 
   // Generate dynamic 4-digit OTP key
   const handleRegenerateOtp = async () => {
