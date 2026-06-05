@@ -210,7 +210,7 @@ export default function SessionDashboard({ session, profile, onLeave }) {
 
     setWebrtc(webrtcSession);
     if (isTeacher) {
-      webrtcSession.startLocalStream('camera');
+      webrtcSession.startLocalStream('camera', { video: true, audio: true });
     }
 
     return () => {

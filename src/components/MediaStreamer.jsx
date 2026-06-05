@@ -3,6 +3,7 @@ import { Video, VideoOff, Mic, MicOff, Monitor, Radio, Tv, ShieldAlert, Sparkles
 
 export default function MediaStreamer({ webrtcSession, isTeacher, connectionState, stream, remoteStreamState }) {
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const localPreviewRef = useRef(null);
 
   // Local media state (mirror for teacher/student)
@@ -64,9 +65,12 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     }
   }, [isTeacher, remoteStreamSource, remoteVideoEnabled]);
 
-  // Attach remote (teacher) stream to main video element
+  // Attach remote stream to both video and hidden audio elements
   useEffect(() => {
-    if (stream && videoRef.current) videoRef.current.srcObject = stream;
+    if (stream) {
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      if (audioRef.current) audioRef.current.srcObject = stream;
+    }
   }, [stream]);
 
   // Attach local stream to PIP preview (both roles)
@@ -97,15 +101,13 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     const next = !localVideoEnabled;
     if (webrtcSession) {
       if (!webrtcSession.localStream && next) {
-        // No stream at all – create a fresh one (camera)
-        await webrtcSession.startLocalStream(localStreamSource);
+        await webrtcSession.startLocalStream(localStreamSource, { video: true, audio: false });
       } else if (webrtcSession.localStream) {
         const videoTrack = webrtcSession.localStream.getVideoTracks()[0];
         if (videoTrack) {
           videoTrack.enabled = next;
         } else if (next) {
-          // Edge case: we lost the video track (e.g., after screen share)
-          await webrtcSession.startLocalStream('camera');
+          await webrtcSession.startLocalStream('camera', { video: true, audio: false });
         }
       }
     }
@@ -117,14 +119,13 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     const next = !localAudioEnabled;
     if (webrtcSession) {
       if (!webrtcSession.localStream && next) {
-        await webrtcSession.startLocalStream(localStreamSource);
+        await webrtcSession.startLocalStream(localStreamSource, { video: false, audio: true });
       } else if (webrtcSession.localStream) {
         const audioTrack = webrtcSession.localStream.getAudioTracks()[0];
         if (audioTrack) {
           audioTrack.enabled = next;
         } else if (next) {
-          // Recovery path – acquire microphone
-          await webrtcSession.startLocalStream(localStreamSource);
+          await webrtcSession.startLocalStream('camera', { video: false, audio: true });
         }
       }
     }
@@ -136,7 +137,7 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     if (!webrtcSession) return;
     setLocalStreamSource(source);
     setLocalVideoEnabled(true);
-    await webrtcSession.startLocalStream(source);
+    await webrtcSession.startLocalStream(source, { video: true, audio: true });
     broadcastState(true, localAudioEnabled, source);
   };
 
@@ -144,6 +145,11 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
     <div className="relative flex flex-col h-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl group min-h-[350px]">
         {/* Main streaming area */}
         <div className="relative flex-1 bg-slate-950 flex items-center justify-center overflow-hidden">
+          {/* Hidden audio element – always present so remote audio plays even when video is off */}
+          {stream && (
+            <audio ref={audioRef} autoPlay playsInline className="hidden" />
+          )}
+
           {/* Remote video when available */}
           {connectionState === 'connected' && stream && remoteVideoEnabled && (
             <video

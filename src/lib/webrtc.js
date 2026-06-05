@@ -152,52 +152,75 @@ export class WebRTCSession {
     if (this.onStateChange) this.onStateChange(state);
   }
 
-  // Capture user webcam/mic or screen media
-  async startLocalStream(type = 'camera') {
+  // Capture user webcam/mic or screen media.
+  // acquireMedia: { video: boolean, audio: boolean } — acquire only the requested tracks.
+  async startLocalStream(type = 'camera', acquireMedia = { video: true, audio: true }) {
     this.streamPromise = (async () => {
       try {
         let videoTrack = null;
         let audioTrack = null;
-        // 1. Acquire video first
-        if (type === 'screen') {
-          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-          videoTrack = screenStream.getVideoTracks()[0];
-          if (videoTrack) {
-            videoTrack.addEventListener('ended', () => {
-              this.startLocalStream('camera');
-              this.broadcastStreamState({
-                videoEnabled: this.lastVideoEnabled,
-                audioEnabled: this.lastAudioEnabled,
-                streamSource: 'camera',
+
+        // 1. Acquire video if requested
+        if (acquireMedia.video) {
+          if (type === 'screen') {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            videoTrack = screenStream.getVideoTracks()[0];
+            if (videoTrack) {
+              videoTrack.addEventListener('ended', () => {
+                this.startLocalStream('camera', acquireMedia);
+                this.broadcastStreamState({
+                  videoEnabled: this.lastVideoEnabled,
+                  audioEnabled: this.lastAudioEnabled,
+                  streamSource: 'camera',
+                });
               });
-            });
-          }
-        } else {
-          const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-          videoTrack = cameraStream.getVideoTracks()[0];
-        }
-        // 2. Reuse existing audio track if live, otherwise acquire
-        const existingAudioTrack = this.localStream?.getAudioTracks()[0];
-        if (existingAudioTrack && existingAudioTrack.readyState === 'live') {
-          audioTrack = existingAudioTrack;
-        } else {
-          try {
-            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioTrack = audioStream.getAudioTracks()[0];
-          } catch (audioErr) {
-            console.warn('Could not acquire microphone track:', audioErr);
+            }
+          } else {
+            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            videoTrack = cameraStream.getVideoTracks()[0];
           }
         }
-        // 3. Stop old tracks that are being replaced
+
+        // 2. Acquire audio if requested
+        if (acquireMedia.audio) {
+          const existingAudioTrack = this.localStream?.getAudioTracks()[0];
+          if (existingAudioTrack && existingAudioTrack.readyState === 'live') {
+            audioTrack = existingAudioTrack;
+          } else {
+            try {
+              const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              audioTrack = audioStream.getAudioTracks()[0];
+            } catch (audioErr) {
+              console.warn('Could not acquire microphone track:', audioErr);
+            }
+          }
+        }
+
+        // 3. Stop old tracks that are being replaced (only stop matching kind)
         if (this.localStream) {
-          this.localStream.getVideoTracks().forEach(t => { if (t !== videoTrack) t.stop(); });
-          this.localStream.getAudioTracks().forEach(t => { if (t !== audioTrack) t.stop(); });
+          if (acquireMedia.video) {
+            this.localStream.getVideoTracks().forEach(t => { if (t !== videoTrack) t.stop(); });
+          }
+          if (acquireMedia.audio) {
+            this.localStream.getAudioTracks().forEach(t => { if (t !== audioTrack) t.stop(); });
+          }
         }
-        // 4. Build new MediaStream
+
+        // 4. Build new MediaStream, preserving any existing tracks not being replaced
+        const existingTracks = this.localStream ? this.localStream.getTracks() : [];
         const tracks = [];
+
+        // Preserve existing tracks of kinds we're NOT acquiring this time
+        existingTracks.forEach(t => {
+          if ((t.kind === 'video' && !acquireMedia.video) || (t.kind === 'audio' && !acquireMedia.audio)) {
+            tracks.push(t);
+          }
+        });
+
         if (videoTrack) { videoTrack.enabled = this.lastVideoEnabled; tracks.push(videoTrack); }
         if (audioTrack) { audioTrack.enabled = this.lastAudioEnabled; tracks.push(audioTrack); }
         this.localStream = new MediaStream(tracks);
+
         // 5. Replace tracks in existing peer connections
         Object.keys(this.pcs).forEach(peerId => {
           const pc = this.pcs[peerId];
