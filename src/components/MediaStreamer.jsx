@@ -173,6 +173,25 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
                     <p className="text-xs text-slate-400">The participant has turned off their camera. Audio is still active.</p>
                   </div>
                 </div>
+              ) : connectionState === 'connecting' ? (
+                // Connecting state
+                <div className="space-y-4 max-w-sm">
+                  <div className="relative mb-6">
+                    <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20 animate-pulse-ring">
+                      <Radio className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 flex items-center justify-center text-[8px] font-bold text-white">LIVE</span>
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-w-sm">
+                    <h4 className="font-semibold text-slate-200 text-sm md:text-base flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-purple-400" /> Establishing Stream Connection
+                    </h4>
+                    <p className="text-xs text-slate-400">Connecting to the classroom projection feed via WebRTC. This should complete in a few seconds.</p>
+                  </div>
+                </div>
               ) : remoteStreamSource === 'screen' ? (
                 // Show screen‑share slides when teacher is sharing their screen
                 <div className="bg-slate-900/70 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-w-lg w-full text-left transition-all duration-500 animate-fade-in-up">
@@ -249,7 +268,7 @@ export default function MediaStreamer({ webrtcSession, isTeacher, connectionStat
               )}
               <div className="absolute bottom-4 left-4 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-md border border-slate-800 text-[10px] text-slate-400 flex items-center gap-1">
                 <ShieldAlert className="w-3 h-3 text-purple-400" />
-                <span>Signaling: Supabase presence channel</span>
+                <span>WebRTC: {connectionState}</span>
               </div>
             </div>
           )}
